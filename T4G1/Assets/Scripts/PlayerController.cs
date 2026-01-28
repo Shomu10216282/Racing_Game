@@ -1,4 +1,7 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
@@ -23,6 +26,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float boostFOV = 75f;
     [SerializeField] private float fovTransitionSpeed = 5f;
 
+    //UI
+    [SerializeField] private TextMeshProUGUI speedUI;
+    [SerializeField] private Canvas gameOverScreen;
+
+    //misc
     [SerializeField] private Transform groundCheck;
     [SerializeField] private float groundDistance = 0.4f;
     [SerializeField] private LayerMask groundMask;
@@ -41,6 +49,7 @@ public class PlayerController : MonoBehaviour
     private float horizontalAngle = 0f;
     private float verticalAngle = 20f;
 
+    // functions
     void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -58,6 +67,7 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         Move();
+        speedUI.text = "Speed: " + currentSpeed.ToString();
     }
 
     void LateUpdate()
@@ -147,6 +157,8 @@ public class PlayerController : MonoBehaviour
 
         velocity.y += gravity * Time.deltaTime; //gravity
         controller.Move(velocity * Time.deltaTime);
+
+        if (Input.GetKey(KeyCode.R)) { SceneManager.LoadScene("D1"); Time.timeScale = 1f; }
     }
 
     void OnCollisionEnter(Collision collision)
@@ -154,6 +166,8 @@ public class PlayerController : MonoBehaviour
         if (((1 << collision.gameObject.layer) & hazardLayer) != 0)
         {
             pause();
+            gameOverScreen.gameObject.SetActive(true);
+            Debug.Log("collisionenter");
         }
     }
     void OnControllerColliderHit(ControllerColliderHit hit)
@@ -161,19 +175,25 @@ public class PlayerController : MonoBehaviour
         if (((1 << hit.gameObject.layer) & hazardLayer) != 0)
         {
             pause();
+            gameOverScreen.gameObject.SetActive(true);
         }
     }
     void OnTriggerEnter(Collider other)
     {
-        // For trigger colliders
         if (((1 << other.gameObject.layer) & hazardLayer) != 0)
         {
             pause();
+            gameOverScreen.gameObject.SetActive(true);
         }
     }
 
     void pause()
     {
         Time.timeScale = 0f;
+    }
+
+    void die()
+    {
+
     }
 }
