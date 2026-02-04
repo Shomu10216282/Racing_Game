@@ -45,10 +45,11 @@ public class MenuSystem : MonoBehaviour
 
     public enum Track
     {
+        D1,
         Germany,
         Italy,
         Japan,
-        USA
+        USA,
     }
 
     public void LoadTrack(int trackIndex)
