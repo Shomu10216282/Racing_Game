@@ -5,16 +5,23 @@ using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
-    //ADD SOUNDS, UI
+    //ADD SOUNDS
+    [SerializeField] private string thisLevel;
     //move settings
     [SerializeField] private float acceleration = 5f;
     [SerializeField] private float deceleration = 8f;
     [SerializeField] private float topSpeed = 5f;
-    [SerializeField] private float sprintTopSpeed = 8f;
+    [SerializeField] private float boostTopSpeed = 200f;
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private float turnSpeed = 150f;
+
+    //boost
     [SerializeField] private float maxBoost = 100f;
-    [SerializeField] private float boost = 100f;
+    [SerializeField] private float boostDrainRate = 20f;
+    [SerializeField] private Slider boostSlider;
+
+    private float currentBoost = 100f;
+    private bool isBoosting = false;
 
     //cam settings
     [SerializeField] private Transform cameraTarget;
@@ -29,13 +36,13 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float fovTransitionSpeed = 5f;
 
     //UI
+    [SerializeField] private float maxHP = 100f;
+    private float HP = 100f;
+    [SerializeField] private Slider HPSlider;
+
     [SerializeField] private TextMeshProUGUI speedUI;
     [SerializeField] private Canvas gameOverScreen;
-
-    //misc
-    [SerializeField] private Transform groundCheck;
-    [SerializeField] private float groundDistance = 0.4f;
-    [SerializeField] private LayerMask groundMask;
+    [SerializeField] private Canvas gameWinScreen;
 
     [SerializeField] private LayerMask hazardLayer;
 
@@ -44,12 +51,13 @@ public class PlayerController : MonoBehaviour
     private Transform cameraTransform;
 
     private Vector3 velocity;
-    private bool isGrounded;
     private float currentSpeed = 0f;
 
     // cam
     private float horizontalAngle = 0f;
     private float verticalAngle = 20f;
+
+    private bool gameWon = false;
 
     // functions
     void Start()
@@ -69,7 +77,9 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         Move();
+        boost();
         speedUI.text = "Speed: " + currentSpeed.ToString();
+        HPSlider.value = HP;
     }
 
     void LateUpdate()
@@ -83,6 +93,27 @@ public class PlayerController : MonoBehaviour
         if (mainCamera == null) return;
         float targetFOV = Input.GetKey(KeyCode.LeftShift) ? boostFOV : normalFOV;
         mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, targetFOV, fovTransitionSpeed * Time.deltaTime);
+    }
+
+    void boost()
+    {
+        isBoosting = Input.GetKey(KeyCode.LeftShift) && currentSpeed > 0 && currentBoost > 0;
+        if (isBoosting)
+        {
+            currentBoost -= boostDrainRate * Time.deltaTime;
+            currentBoost = Mathf.Max(currentBoost, 0f);
+        }
+
+        if (boostSlider != null)
+        {
+            boostSlider.value = currentBoost;
+        }
+    }
+
+    public void refillBoost(float amount)
+    {
+        currentBoost += amount;
+        currentBoost = Mathf.Min(currentBoost, maxBoost);
     }
 
     void moveCamera()
@@ -121,14 +152,7 @@ public class PlayerController : MonoBehaviour
     {
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
-        float targetTopSpeed = Input.GetKey(KeyCode.LeftShift) ? sprintTopSpeed : topSpeed;
-
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
-
-        if (isGrounded && velocity.y < 0)
-        {
-            velocity.y = -2f;
-        }
+        float targetTopSpeed = (isBoosting && currentBoost > 0) ? boostTopSpeed : topSpeed;
 
         if (vertical != 0) //I HAVE MEGA AIDS
         {
@@ -160,10 +184,13 @@ public class PlayerController : MonoBehaviour
         velocity.y += gravity * Time.deltaTime; //gravity
         controller.Move(velocity * Time.deltaTime);
 
-        if (Input.GetKey(KeyCode.R)) { SceneManager.LoadScene("D1"); Time.timeScale = 1f; }
+        if (Input.GetKey(KeyCode.R)) { SceneManager.LoadScene(thisLevel); Time.timeScale = 1f; }
+        if (Input.GetKey(KeyCode.E) && gameWon) { SceneManager.LoadScene("MainMenu"); Time.timeScale = 1f; }//mmmm
     }
 
-    void OnCollisionEnter(Collision collision)
+    //COLLISION
+
+    void OnCollisionEnter(Collision collision) //fallback check
     {
         if (((1 << collision.gameObject.layer) & hazardLayer) != 0)
         {
@@ -172,7 +199,7 @@ public class PlayerController : MonoBehaviour
             Debug.Log("collisionenter");
         }
     }
-    void OnControllerColliderHit(ControllerColliderHit hit)
+    void OnControllerColliderHit(ControllerColliderHit hit) //fallback check cuz i love unity <3
     {
         if (((1 << hit.gameObject.layer) & hazardLayer) != 0)
         {
@@ -184,15 +211,24 @@ public class PlayerController : MonoBehaviour
     {
         if (((1 << other.gameObject.layer) & hazardLayer) != 0)
         {
-            Pause();
-            gameOverScreen.gameObject.SetActive(true);
+            if (isBoosting == false)
+            {
+                HP -= 25;
+                if (HP <= 0)
+                {
+                    Pause();
+                    gameOverScreen.gameObject.SetActive(true); //convert to a loss function when u can bruh
+                }
+            }
+            other.gameObject.SetActive(false);
         }
     }
 
     public void GameWon()
     {
         Pause();
-        gameOverScreen.gameObject.SetActive(true);
+        gameWinScreen.gameObject.SetActive(true);
+        gameWon = true;
     }
 
     void Pause()

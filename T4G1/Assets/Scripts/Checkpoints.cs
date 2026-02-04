@@ -25,7 +25,8 @@ public class Checkpoints : MonoBehaviour
 
             if (currentCheckpointIndex >= checkpoints.Count)
             {
-                Debug.Log("All checkpoints complete!");
+                //player controller's win function here
+                this.gameObject.GetComponent<PlayerController>().GameWon();
             }
         }
     }
