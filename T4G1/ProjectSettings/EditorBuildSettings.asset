@@ -9,11 +9,11 @@ EditorBuildSettings:
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
-    path: Assets/D1.unity
-    guid: f62362fe684748846804ee27a3ed5ff1
-  - enabled: 1
     path: Assets/Scenes/MainMenu.unity
     guid: 002343b3a9a385041bee49a7d03cb598
+  - enabled: 1
+    path: Assets/D1.unity
+    guid: f62362fe684748846804ee27a3ed5ff1
   - enabled: 1
     path: Assets/Scenes/Levels/Germany Track/Germany.unity
     guid: 28283319fdd2bf841965d9f67912696e
