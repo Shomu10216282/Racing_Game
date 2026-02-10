@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -54,6 +55,16 @@ public class PlayerController : MonoBehaviour
     private Vector3 velocity;
     private float currentSpeed = 0f;
 
+    //sounds
+    private AudioSource ad;
+    [SerializeField] private AudioClip accelerationAClip;
+    [SerializeField] private AudioClip loopAClip;
+    [SerializeField] private AudioClip decelerationAClip;
+    [SerializeField] private float speedForLoop = 4f;
+    private enum EngineState { Idle, Accelerating, Loop, Decelerating }
+    private EngineState currentEngineState = EngineState.Idle;
+    private float previousSpeed = 0f;
+
     // cam
     private float horizontalAngle = 0f;
     private float verticalAngle = 20f;
@@ -65,6 +76,7 @@ public class PlayerController : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         mainCamera = Camera.main;
+        ad = GetComponent<AudioSource>();
 
         if (mainCamera != null)
         {
@@ -79,8 +91,9 @@ public class PlayerController : MonoBehaviour
     {
         Move();
         boost();
-        speedUI.text = "Speed: " + currentSpeed.ToString();
+        speedUI.text = "Speed: " + Mathf.Floor(Mathf.Abs(currentSpeed)).ToString();
         HPSlider.value = HP;
+        carEngine();
     }
 
     void LateUpdate()
@@ -94,6 +107,72 @@ public class PlayerController : MonoBehaviour
         if (mainCamera == null) return;
         float targetFOV = Input.GetKey(KeyCode.LeftShift) ? boostFOV : normalFOV;
         mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, targetFOV, fovTransitionSpeed * Time.deltaTime);
+    }
+
+    void carEngine() //LATER, ADD THE CAR LIGHTS STUFF HERE
+    {
+        if (ad == null) return;
+
+        float absSpeed = Mathf.Abs(currentSpeed);
+        bool isAccel = absSpeed > previousSpeed + 0.1f;
+        bool isDecel = absSpeed < previousSpeed - 0.1f;
+        bool atSpeed = absSpeed >= speedForLoop;
+
+        switch (currentEngineState)
+        {
+            case EngineState.Idle:
+                if (isAccel && absSpeed > 0.5f)
+                {
+                    playSound(accelerationAClip, false);
+                    currentEngineState = EngineState.Accelerating;
+                }
+                break;
+
+            case EngineState.Accelerating:
+                if (!ad.isPlaying && atSpeed)
+                {
+                    playSound(loopAClip, true);
+                    currentEngineState = EngineState.Loop;
+                }
+                else if (isDecel)
+                {
+                    playSound(decelerationAClip, false);
+                    currentEngineState = EngineState.Decelerating;
+                }
+                break;
+
+            case EngineState.Loop:
+                if (isDecel || absSpeed < speedForLoop)
+                {
+                    playSound(decelerationAClip, false);
+                    currentEngineState = EngineState.Decelerating;
+                }
+                break;
+
+            case EngineState.Decelerating:
+                if (!ad.isPlaying || absSpeed < 0.5f)
+                {
+                    ad.Stop();
+                    currentEngineState = EngineState.Idle;
+                }
+                else if (isAccel)
+                {
+                    playSound(accelerationAClip, false);
+                    currentEngineState = EngineState.Accelerating;
+                }
+                break;
+        }
+
+        previousSpeed = absSpeed;
+    }
+
+    void playSound(AudioClip clip, bool loop)
+    {
+        if (clip == null || ad == null) return;
+
+        ad.clip = clip;
+        ad.loop = loop;
+        ad.Play();
     }
 
     void boost()
