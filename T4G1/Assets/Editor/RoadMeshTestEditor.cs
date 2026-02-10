@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Splines;
 
 [CustomEditor(typeof(RoadMeshTest))]
 public class RoadMeshTestEditor : Editor
@@ -12,11 +13,10 @@ public class RoadMeshTestEditor : Editor
         EditorGUILayout.Space();
 
         generator.splineContainer =
-            (UnityEngine.Splines.SplineContainer)
-            EditorGUILayout.ObjectField(
+            (SplineContainer)EditorGUILayout.ObjectField(
                 "Spline Container",
                 generator.splineContainer,
-                typeof(UnityEngine.Splines.SplineContainer),
+                typeof(SplineContainer),
                 true
             );
 
@@ -26,11 +26,14 @@ public class RoadMeshTestEditor : Editor
         generator.trackWidth =
             EditorGUILayout.Slider("Track Width", generator.trackWidth, 1f, 20f);
 
+        generator.trackThickness =
+            EditorGUILayout.Slider("Track Thickness", generator.trackThickness, 0.1f, 5f);
+
         generator.segmentLength =
             EditorGUILayout.Slider("Segment Length", generator.segmentLength, 0.2f, 5f);
 
         generator.textureTiling =
-            EditorGUILayout.Slider("Texture Tiling", generator.textureTiling, 0.1f, 5f);
+            EditorGUILayout.Slider("Texture Tiling", generator.textureTiling, 0.1f, 20f);
 
         EditorGUILayout.Space(10);
         EditorGUILayout.LabelField("Checkpoint Settings", EditorStyles.boldLabel);
@@ -44,7 +47,7 @@ public class RoadMeshTestEditor : Editor
             );
 
         generator.checkpointCount =
-            EditorGUILayout.IntSlider("Checkpoint Count", generator.checkpointCount, 0, 50);
+            EditorGUILayout.IntSlider("Checkpoint Count", generator.checkpointCount, 0, 100);
 
         generator.checkpointSpacing =
             EditorGUILayout.Slider("Checkpoint Spacing", generator.checkpointSpacing, 5f, 200f);
@@ -53,6 +56,23 @@ public class RoadMeshTestEditor : Editor
             "If Checkpoint Count > 0, checkpoints are evenly spaced.\nOtherwise spacing is used.",
             MessageType.Info
         );
+
+        EditorGUILayout.Space(10);
+        EditorGUILayout.LabelField("Fence Settings", EditorStyles.boldLabel);
+
+        generator.fencePrefab =
+            (GameObject)EditorGUILayout.ObjectField(
+                "Fence Prefab",
+                generator.fencePrefab,
+                typeof(GameObject),
+                false
+            );
+
+        generator.fenceSpacing =
+            EditorGUILayout.Slider("Fence Spacing", generator.fenceSpacing, 0.5f, 10f);
+
+        generator.fenceOffset =
+            EditorGUILayout.Slider("Fence Offset", generator.fenceOffset, 0f, 5f);
 
         EditorGUILayout.Space(15);
 
