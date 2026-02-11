@@ -1,6 +1,7 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Splines;
+using System.Collections.Generic;
+
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class RoadMeshTest : MonoBehaviour
@@ -21,6 +22,11 @@ public class RoadMeshTest : MonoBehaviour
     public int checkpointCount = 0;
     public float checkpointSpacing = 50f;
 
+    [Header("Fence Settings")]
+    public GameObject fencePrefab;
+    public float fenceSpacing = 3f;
+    public float fenceOffset = 0.5f;
+
     Mesh mesh;
 
     public void Generate()
@@ -35,6 +41,7 @@ public class RoadMeshTest : MonoBehaviour
 
         GenerateRoadMesh();
         GenerateCheckpoints();
+        GenerateFences();
     }
 
     void GenerateRoadMesh()
@@ -82,8 +89,8 @@ public class RoadMeshTest : MonoBehaviour
             uvs.Add(new Vector2(1f, vCoord));
 
             //bottom vert uvs
-            uvs.Add(new Vector2(0f, 0f));
-            uvs.Add(new Vector2(1f, 0f));
+            uvs.Add(new Vector2(0f, vCoord));
+            uvs.Add(new Vector2(1f, vCoord));
 
             if(i < steps)
             {
@@ -224,6 +231,50 @@ public class RoadMeshTest : MonoBehaviour
         }
     }
 
+void GenerateFences()
+    {
+        if (fencePrefab == null)
+            return;
+
+        Spline spline = splineContainer.Spline;
+        float splineLength = spline.GetLength();
+
+        int fenceCount = Mathf.CeilToInt(splineLength / fenceSpacing);
+
+        Transform parent = new GameObject("Fences").transform;
+        parent.SetParent(transform);
+
+        for (int i = 0; i < fenceCount; i++)
+        {
+            float distance = i * fenceSpacing;
+            float t = spline.ConvertIndexUnit(distance, PathIndexUnit.Distance, PathIndexUnit.Normalized);
+
+            Vector3 position = splineContainer.EvaluatePosition(t);
+            Vector3 tangent = ((Vector3)splineContainer.EvaluateTangent(t)).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, tangent).normalized;
+
+            Vector3 offset = right * (trackWidth / 2f + fenceOffset);
+
+            GameObject leftFence = Instantiate(
+                fencePrefab,
+                position - offset,
+                Quaternion.LookRotation(tangent) * Quaternion.Euler(0, 90f, 0f),
+                parent
+            );
+            leftFence.name = $"Fence_Left_{i + 1}";
+
+            GameObject rightFence = Instantiate(
+                fencePrefab,
+                position + offset,
+                Quaternion.LookRotation(tangent) * Quaternion.Euler(0, -90f, 0f),
+                parent
+            );
+            rightFence.name = $"Fence_Right_{i + 1}";
+        }
+
+
+    }
+
     public void Clear()
     {
         if (mesh != null)
@@ -233,5 +284,10 @@ public class RoadMeshTest : MonoBehaviour
         Transform cp = transform.Find("Checkpoints");
         if (cp != null)
             DestroyImmediate(cp.gameObject);
+
+        // Remove fences
+        Transform fences = transform.Find("Fences");
+        if (fences != null)
+            DestroyImmediate(fences.gameObject);
     }
 }
