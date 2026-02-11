@@ -20,7 +20,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float maxBoost = 100f;
     [SerializeField] private float boostDrainRate = 20f;
     [SerializeField] private Slider boostSlider;
-
+    private bool wasBoost = false;
     private float currentBoost = 100f;
     private bool isBoosting = false;
 
@@ -61,6 +61,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private AudioClip loopAClip;
     [SerializeField] private AudioClip decelerationAClip;
     [SerializeField] private float speedForLoop = 4f;
+    [SerializeField] private AudioClip boostSound;
+    [SerializeField] private AudioClip boostRefill;
+    [SerializeField] private AudioClip objectBreak;
+    [SerializeField] private AudioClip carExplode;
     private enum EngineState { Idle, Accelerating, Loop, Decelerating }
     private EngineState currentEngineState = EngineState.Idle;
     private float previousSpeed = 0f;
@@ -91,7 +95,7 @@ public class PlayerController : MonoBehaviour
     {
         Move();
         boost();
-        speedUI.text = "Speed: " + Mathf.Floor(Mathf.Abs(currentSpeed)).ToString();
+        speedUI.text = Mathf.Floor(Mathf.Abs(currentSpeed)).ToString();
         HPSlider.value = HP;
         carEngine();
     }
@@ -178,6 +182,10 @@ public class PlayerController : MonoBehaviour
     void boost()
     {
         isBoosting = Input.GetKey(KeyCode.LeftShift) && currentSpeed > 0 && currentBoost > 0;
+        if (isBoosting && !wasBoost)
+        {
+            ad.PlayOneShot(boostSound);
+        }
         if (isBoosting)
         {
             currentBoost -= boostDrainRate * Time.deltaTime;
@@ -188,6 +196,8 @@ public class PlayerController : MonoBehaviour
         {
             boostSlider.value = currentBoost;
         }
+
+        wasBoost = isBoosting;
     }
 
     public void refillBoost(float amount)
